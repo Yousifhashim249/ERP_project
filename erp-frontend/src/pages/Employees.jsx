@@ -25,6 +25,8 @@ function App() {
   const [employeeIdInput, setEmployeeIdInput] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(""); // ✅ الشهر المختار
   const [activeTab, setActiveTab] = useState("employees");
+  const [filterDept, setFilterDept] = useState("");
+
 
   const [newEmployee, setNewEmployee] = useState({
     name: "",
@@ -210,70 +212,103 @@ function App() {
         </button>
       </div>
 
-      {/* --- تبويب الموظفين --- */}
       {activeTab === "employees" && (
-        <section className="p-4 border rounded bg-gray-50 space-y-2">
-          <h2 className="text-xl font-semibold">الموظفون</h2>
-          <table className="w-full border-collapse border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-2 py-1">ID</th>
-                <th className="border px-2 py-1">الاسم</th>
-                <th className="border px-2 py-1">الهاتف</th>
-                <th className="border px-2 py-1">الوظيفة</th>
-                <th className="border px-2 py-1">الراتب</th>
-                <th className="border px-2 py-1">القسم</th>
-                <th className="border px-2 py-1">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.id}>
-                  <td className="border px-2 py-1">{emp.id}</td>
-                  <td className="border px-2 py-1">{emp.name}</td>
-                  <td className="border px-2 py-1">{emp.phone}</td>
-                  <td className="border px-2 py-1">{emp.job_title}</td>
-                  <td className="border px-2 py-1">{emp.salary}</td>
-                  <td className="border px-2 py-1">
-                    {getDeptName(emp.department_id)}
-                  </td>
-                  <td className="border px-2 py-1 space-x-1">
-                    <button
-                      className="bg-yellow-500 text-white px-1 py-0.5 rounded"
-                      onClick={async () => {
-                        const updatedName = prompt(
-                          "أدخل الاسم الجديد:",
-                          emp.name
-                        );
-                        if (updatedName) {
-                          await updateEmployee(emp.id, {
-                            ...emp,
-                            name: updatedName
-                          });
-                          fetchEmployees();
-                        }
-                      }}
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      className="bg-red-500 text-white px-1 py-0.5 rounded"
-                      onClick={async () => {
-                        if (confirm("هل أنت متأكد من حذف هذا الموظف؟")) {
-                          await deleteEmployee(emp.id);
-                          fetchEmployees();
-                        }
-                      }}
-                    >
-                      حذف
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+  <section className="p-4 border rounded bg-gray-50 space-y-2">
+    <h2 className="text-xl font-semibold">الموظفون</h2>
+
+    {/* ✅ فلتر حسب القسم */}
+    <div className="flex items-center gap-2 mb-2">
+      <label>تصفية حسب القسم:</label>
+      <select
+        value={filterDept}
+        onChange={(e) => setFilterDept(e.target.value)}
+        className="border p-1"
+      >
+        <option value="">كل الأقسام</option>
+        {departments.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <table className="w-full border-collapse border">
+      <thead>
+        <tr className="bg-gray-200">
+          <th className="border px-2 py-1">ID</th>
+          <th className="border px-2 py-1">الاسم</th>
+          <th className="border px-2 py-1">الهاتف</th>
+          <th className="border px-2 py-1">الوظيفة</th>
+          <th className="border px-2 py-1">الراتب</th>
+          <th className="border px-2 py-1">طريقة الدفع</th> {/* ✅ جديد */}
+          <th className="border px-2 py-1">صافي الراتب</th> {/* ✅ جديد */}
+          <th className="border px-2 py-1">القسم</th>
+          <th className="border px-2 py-1">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {employees
+          .filter((emp) => !filterDept || emp.department_id === parseInt(filterDept))
+          .map((emp) => (
+            <tr key={emp.id}>
+              <td className="border px-2 py-1">{emp.id}</td>
+              <td className="border px-2 py-1">{emp.name}</td>
+              <td className="border px-2 py-1">{emp.phone}</td>
+              <td className="border px-2 py-1">{emp.job_title}</td>
+              <td className="border px-2 py-1">{emp.salary}</td>
+              <td className="border px-2 py-1">{emp.payment_method || "-"}</td> {/* ✅ طريقة الدفع */}
+              <td className="border px-2 py-1">{emp.net_salary || 0}</td> {/* ✅ صافي الراتب */}
+              <td className="border px-2 py-1">
+                {getDeptName(emp.department_id)}
+              </td>
+              <td className="border px-2 py-1 space-x-1">
+                <button
+                  className="bg-yellow-500 text-white px-1 py-0.5 rounded"
+                  onClick={async () => {
+                    const updatedName = prompt("أدخل الاسم الجديد:", emp.name);
+                    if (updatedName) {
+                      await updateEmployee(emp.id, { ...emp, name: updatedName });
+                      fetchEmployees();
+                    }
+                  }}
+                >
+                  تعديل
+                </button>
+                <button
+                  className="bg-red-500 text-white px-1 py-0.5 rounded"
+                  onClick={async () => {
+                    if (confirm("هل أنت متأكد من حذف هذا الموظف؟")) {
+                      await deleteEmployee(emp.id);
+                      fetchEmployees();
+                    }
+                  }}
+                >
+                  حذف
+                </button>
+              </td>
+            </tr>
+          ))}
+      </tbody>
+
+      {/* ✅ إجمالي صافي الرواتب */}
+      <tfoot>
+        <tr className="bg-gray-100 font-semibold">
+          <td colSpan="7" className="text-right border px-2 py-1">
+            إجمالي صافي الرواتب:
+          </td>
+          <td className="border px-2 py-1">
+            {employees
+              .filter((emp) => !filterDept || emp.department_id === parseInt(filterDept))
+              .reduce((sum, emp) => sum + (emp.net_salary || 0), 0)
+              .toLocaleString()}
+          </td>
+          <td className="border px-2 py-1">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+)}
 
       {/* --- تبويب إضافة موظف --- */}
       {activeTab === "addEmployee" && (
