@@ -211,6 +211,12 @@ class StockMoveResponse(StockMoveSchema):
     class Config:
         orm_mode = True
 
+class DailyExpenseSchema(BaseModel):
+    amount: float
+    description: str
+    expense_account_id: int
+    credit_account_id: int
+
 # ================== Purchasing Schemas ==================
 class VendorSchema(BaseModel):
     name: str
@@ -1308,6 +1314,81 @@ def delete_payment(payment_id: int, db: Session = Depends(get_db)):
     db.delete(payment)
     db.commit()
     return {"detail": f"Payment {payment_id} deleted successfully"}
+# ------------------- Daily Expenses / Payroll -------------------
+
+@app.post("/daily_expense")
+def create_daily_expense(expense: DailyExpenseSchema, db: Session = Depends(get_db)):
+    # إنشاء قيد اليومية
+    journal_entry = JournalEntry(date=date.today(), description=expense.description)
+    db.add(journal_entry)
+    db.commit()
+    db.refresh(journal_entry)
+
+    # جلب الحسابات
+    expense_account = db.get(Account, expense.expense_account_id)
+    credit_account = db.get(Account, expense.credit_account_id)
+    if not expense_account or not credit_account:
+        raise HTTPException(status_code=400, detail="حساب المصروف أو الحساب الدائن غير موجود")
+
+    # إنشاء سطور القيد
+    t1 = TransactionLine(journal_entry_id=journal_entry.id, account_id=expense_account.id, debit=expense.amount, credit=0)
+    t2 = TransactionLine(journal_entry_id=journal_entry.id, account_id=credit_account.id, debit=0, credit=expense.amount)
+    db.add_all([t1, t2])
+    db.commit()
+
+    return {
+        "detail": "مصروف مسجل بنجاح ✅",
+        "journal_entry_id": journal_entry.id,
+        "amount": expense.amount,
+        "description": expense.description,
+        "expense_account_id": expense.expense_account_id,
+        "credit_account_id": expense.credit_account_id
+    }
+
+@app.get("/daily_expense")
+def get_daily_expenses(db: Session = Depends(get_db)):
+    # جلب كل القيود التي تحتوي على مدين > 0 (مصروفات)
+    entries = db.query(JournalEntry).join(TransactionLine).filter(TransactionLine.debit > 0).all()
+    result = []
+
+    for e in entries:
+        # جلب سطر المصروف وسطر الدائن لكل JournalEntry
+        expense_line = db.query(TransactionLine).filter(
+            TransactionLine.journal_entry_id == e.id,
+            TransactionLine.debit > 0
+        ).first()
+
+        credit_line = db.query(TransactionLine).filter(
+            TransactionLine.journal_entry_id == e.id,
+            TransactionLine.credit > 0
+        ).first()
+
+        if expense_line and credit_line:
+            result.append({
+                "journal_entry_id": e.id,
+                "description": e.description,
+                "amount": expense_line.debit,
+                "expense_account_id": expense_line.account_id,
+                "credit_account_id": credit_line.account_id
+            })
+    return result
+
+
+@app.delete("/daily_expense/{journal_entry_id}")
+
+def delete_daily_expense(journal_entry_id: int, db: Session = Depends(get_db)):
+    journal = db.query(JournalEntry).filter(JournalEntry.id == journal_entry_id).first()
+    if not journal:
+        raise HTTPException(status_code=404, detail="Journal Entry not found")
+    
+    # حذف كل سطور القيد المرتبطة
+    db.query(TransactionLine).filter(TransactionLine.journal_entry_id == journal.id).delete()
+    
+    # حذف القيد نفسه
+    db.delete(journal)
+    db.commit()
+    return {"detail": f"مصروف يومي أو راتب للقيد {journal_entry_id} تم حذفه بنجاح ✅"}
+
 
 
 @app.get("/trial_balance")

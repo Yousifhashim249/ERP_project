@@ -371,3 +371,28 @@ export async function createAdjustJournal(entry) {
   const res = await axios.post(`${API_URL}/adjust_journal_entry`, entry);
   return res.data;
 }
+// ================== Daily Expenses / Payroll ==================
+
+// إنشاء مصروف يومي أو راتب
+export async function createDailyExpense(expense) {
+  /**
+   * expense = {
+   *   amount: number,
+   *   description: string,
+   *   expense_account_id: number
+   * }
+   */
+  const res = await axios.post(`${API_URL}/daily_expense`, expense);
+  return res.data;
+}
+
+// حذف مصروف يومي أو راتب حسب Journal Entry ID
+export async function deleteDailyExpense(journalEntryId) {
+  const res = await axios.delete(`${API_URL}/daily_expense/${journalEntryId}`);
+  return res.data;
+}
+export async function getDailyExpenses() {
+  const res = await axios.get(`${API_URL}/daily_expense`);
+  return res.data;
+}
+
