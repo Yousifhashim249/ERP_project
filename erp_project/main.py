@@ -1236,19 +1236,21 @@ def create_depreciation_line(line: DepreciationLineSchema, db: Session = Depends
 @app.get("/payments", response_model=List[PaymentResponse])
 def get_payments(db: Session = Depends(get_db)):
     return db.query(Payment).all()
-@app.post("/payments")
+@app.post("/payments", response_model=PaymentResponse)
 def create_payment(payment: PaymentSchema, db: Session = Depends(get_db)):
-    # 1️⃣ إنشاء قيد يومية تلقائي
+
+    # 1️⃣ إنشاء قيد يومية
     journal_entry = JournalEntry(
         date=payment.date,
-        description=f"Payment to vendor {payment.vendor_id} - {payment.reference or ''}"
+        description=f"دفعة لمورد {payment.vendor_id} - {payment.reference or ''}",
+       
     )
     db.add(journal_entry)
     db.commit()
     db.refresh(journal_entry)
 
-    # 2️⃣ إنشاء سطر مدين لحساب المورد (Accounts Payable)
-    vendor_account = db.query(Account).filter(Account.name=="حساب الموردين").first()
+    # 2️⃣ حساب الموردين
+    vendor_account = db.query(Account).filter(Account.name == "حساب الموردين").first()
     if not vendor_account:
         raise HTTPException(status_code=400, detail="Accounts Payable account not found")
 
@@ -1259,7 +1261,7 @@ def create_payment(payment: PaymentSchema, db: Session = Depends(get_db)):
         credit=0.0
     )
 
-    # 3️⃣ إنشاء سطر دائن للحساب الذي اختاره المستخدم
+    # 3️⃣ الحساب المختار
     user_account = db.get(Account, payment.account_id)
     if not user_account:
         raise HTTPException(status_code=400, detail="Selected account not found")
@@ -1274,16 +1276,21 @@ def create_payment(payment: PaymentSchema, db: Session = Depends(get_db)):
     db.add_all([t1, t2])
     db.commit()
 
-    # 4️⃣ إنشاء سجل الدفع نفسه
+    # 4️⃣ حفظ الدفعة نفسها (✔️ مع account_id و reference)
     p = Payment(
         vendor_id=payment.vendor_id,
         date=payment.date,
         amount=payment.amount,
-        journal_entry_id=journal_entry.id
+        journal_entry_id=journal_entry.id,
+        account_id=payment.account_id,
+        reference=payment.reference
     )
     db.add(p)
     db.commit()
     db.refresh(p)
+
+
+
 
     # 5️⃣ جلب اسم المورد واسم الحساب لعرضه في Ledger مباشرة
     vendor = db.get(Vendor, payment.vendor_id)
