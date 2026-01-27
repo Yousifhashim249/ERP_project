@@ -16,9 +16,14 @@ export default function JournalEntries() {
       const journalData = await getJournalEntries();
       const linesData = await getTransactionLines();
       const accountsData = await getAccounts();
+
       const accountsDict = {};
       accountsData.forEach(acc => { accountsDict[acc.id] = acc.name; });
-      setEntries(journalData);
+
+      // ترتيب القيود تنازلياً حسب رقم القيد
+      const sortedJournalData = journalData.sort((a, b) => b.id - a.id);
+
+      setEntries(sortedJournalData);
       setLines(linesData);
       setAccounts(accountsDict);
     }
@@ -55,11 +60,11 @@ export default function JournalEntries() {
     };
 
     try {
-      await createAdjustJournal(payload);  // الربط المباشر بالـ API
+      await createAdjustJournal(payload);
       alert("تم إنشاء القيد بنجاح");
-      // تحديث عرض القيود بعد الإضافة
       const [journalData, linesData] = await Promise.all([getJournalEntries(), getTransactionLines()]);
-      setEntries(journalData);
+      const sortedJournalData = journalData.sort((a, b) => b.id - a.id); // ترتيب تنازلي
+      setEntries(sortedJournalData);
       setLines(linesData);
       setAdjustData({ date: new Date().toISOString().slice(0,10), description: "", lines: [{ account_id: "", debit: 0, credit: 0 }] });
     } catch (err) {
@@ -72,7 +77,6 @@ export default function JournalEntries() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">قيود اليومية</h1>
 
-      {/* فورم إنشاء قيد تعديل */}
       <div className="border rounded p-4 mb-6 bg-gray-50 shadow-sm">
         <h2 className="font-bold mb-2">إضافة قيد تعديل / رصيد ابتدائي</h2>
         <div className="mb-2">
@@ -101,11 +105,12 @@ export default function JournalEntries() {
         <button onClick={submitAdjust} className="bg-green-500 text-white px-4 py-2 rounded">حفظ القيد</button>
       </div>
 
-      {/* عرض القيود اليومية */}
       {entries.map(entry => (
         <div key={entry.id} className="border rounded p-4 mb-4 bg-white shadow-sm">
           <div className="mb-2">
-            <strong>التاريخ:</strong> {entry.date} | <strong>الوصف:</strong> {entry.description || "-"}
+            <strong>رقم القيد:</strong> {entry.id} | 
+            <strong> التاريخ:</strong> {entry.date} | 
+            <strong> الوصف:</strong> {entry.description || "-"}
           </div>
 
           <table className="min-w-full border border-gray-300">
@@ -120,7 +125,6 @@ export default function JournalEntries() {
               {lines.filter(line => line.journal_entry_id === entry.id).map(line => (
                 <tr key={line.id}>
                   <td className="border px-2 py-1">{line.account_name || "غير محدد"}</td>
-
                   <td className="border px-2 py-1">{line.debit}</td>
                   <td className="border px-2 py-1">{line.credit}</td>
                 </tr>
