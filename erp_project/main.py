@@ -552,7 +552,11 @@ def get_accounts(db: Session = Depends(get_db)):
         Account.parent_id,
         func.coalesce(func.sum(TransactionLine.debit), 0).label("total_debit"),
         func.coalesce(func.sum(TransactionLine.credit), 0).label("total_credit"),
-    ).outerjoin(TransactionLine, TransactionLine.account_id == Account.id).group_by(Account.id).all()
+    ).outerjoin(TransactionLine, TransactionLine.account_id == Account.id).group_by(  Account.id,
+    Account.name,
+    Account.code,
+    Account.type,
+    Account.parent_id).all()
 
     result = []
     for acc in accounts:
@@ -1539,6 +1543,45 @@ def get_sales_invoices_by_department(department_id: int, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="لا توجد فواتير لهذا القسم")
     
     return invoices
+@app.delete("/sales_invoices/{invoice_id}")
+def delete_sales_invoice(invoice_id: int, db: Session = Depends(get_db)):
+    invoice = db.query(SalesInvoice).filter(SalesInvoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="الفاتورة غير موجودة")
+
+    journal_entry_id = invoice.journal_entry_id
+
+    # 1️⃣ حذف حركات المخزون
+    db.query(StockMove).filter(
+        StockMove.reference == f"Sales Invoice {invoice.id}"
+    ).delete()
+
+    # 2️⃣ حذف عناصر الفاتورة
+    db.query(SalesInvoiceItem).filter(
+        SalesInvoiceItem.sales_invoice_id == invoice.id
+    ).delete()
+
+    # 3️⃣ فك الربط مع القيد المحاسبي
+    invoice.journal_entry_id = None
+    db.flush()  # مهم جدًا
+
+    # 4️⃣ حذف الفاتورة
+    db.delete(invoice)
+
+    # 5️⃣ حذف القيود المحاسبية
+    if journal_entry_id:
+        db.query(TransactionLine).filter(
+            TransactionLine.journal_entry_id == journal_entry_id
+        ).delete()
+
+        db.query(JournalEntry).filter(
+            JournalEntry.id == journal_entry_id
+        ).delete()
+
+    db.commit()
+
+    return {"detail": f"تم حذف فاتورة المبيعات {invoice_id} نهائيًا"}
+
 
 @app.get("/expense_analysis")
 def expense_analysis(db: Session = Depends(get_db)):

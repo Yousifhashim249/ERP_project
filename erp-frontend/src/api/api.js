@@ -202,10 +202,15 @@ export async function getSalesInvoicesByDepartment(department_id) {
 }
 
 
-// حذف فاتورة مبيعات
-export async function deleteSalesInvoice(id) {
-  const res = await axios.delete(`${API_URL}/sales_invoices/${id}`);
-  return res.data;
+
+export async function deleteSalesInvoice(invoiceId) {
+  try {
+    const res = await axios.delete(`${API_URL}/sales_invoices/${invoiceId}`);
+    return res.data;
+  } catch (err) {
+    console.error("Error deleting sales invoice:", err.response?.data || err);
+    throw err;
+  }
 }
 
 // ================== Payments (المدفوعات) ==================

@@ -5,7 +5,8 @@ import {
   getDepartments,
   getProducts,
   getSalesInvoicesByDepartment,
-  createSalesInvoice
+  createSalesInvoice,
+  deleteSalesInvoice
 } from "../api/api";
 
 export default function SalesInvoices() {
@@ -96,6 +97,20 @@ export default function SalesInvoices() {
     } catch (err) {
       console.error(err.response?.data || err);
       alert("حدث خطأ أثناء إنشاء الفاتورة، تحقق من البيانات");
+    }
+  };
+
+  // ================== حذف فاتورة ==================
+  const handleDeleteInvoice = async (invoiceId) => {
+    if (!window.confirm("هل أنت متأكد من حذف الفاتورة نهائيًا؟ لن يمكن التراجع!")) return;
+
+    try {
+      await deleteSalesInvoice(invoiceId); // ← استدعاء دالة api.js مباشرة
+      alert("تم حذف الفاتورة بنجاح!");
+      fetchInvoices(); // إعادة تحميل الفواتير بعد الحذف
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء حذف الفاتورة");
     }
   };
 
@@ -238,6 +253,13 @@ export default function SalesInvoices() {
                     );
                   })}
                 </ul>
+                {/* زر حذف الفاتورة */}
+                <button
+                  onClick={() => handleDeleteInvoice(inv.id)}
+                  className="bg-red-500 text-white px-2 py-1 rounded mt-1"
+                >
+                  حذف الفاتورة
+                </button>
               </td>
             </tr>
           ))}
