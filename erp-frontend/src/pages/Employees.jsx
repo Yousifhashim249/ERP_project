@@ -26,6 +26,22 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(""); // ✅ الشهر المختار
   const [activeTab, setActiveTab] = useState("employees");
   const [filterDept, setFilterDept] = useState("");
+// ✅ حالة السداد لكل موظف لكل شهر
+  const [salaryPaidMap, setSalaryPaidMap] = useState({});
+
+// تحميل الحالة من localStorage عند بداية التطبيق
+useEffect(() => {
+  const saved = localStorage.getItem("salaryPaidMap");
+  if (saved) setSalaryPaidMap(JSON.parse(saved));
+}, []);
+
+// دالة تبديل حالة السداد
+const toggleSalaryPaid = (employeeId, month) => {
+  const key = `${employeeId}-${month}`;
+  const updated = { ...salaryPaidMap, [key]: !salaryPaidMap[key] };
+  setSalaryPaidMap(updated);
+  localStorage.setItem("salaryPaidMap", JSON.stringify(updated));
+};
 
 
   const [newEmployee, setNewEmployee] = useState({
@@ -758,6 +774,27 @@ function App() {
               <p>بدل المعيشة: {selectedEmployee.cost_of_living}</p>
               <p>طبيعة العمل: {selectedEmployee.job_nature}</p>
               <p>صافي الراتب: {selectedEmployee.net_salary}</p>
+              <button
+  onClick={() =>
+    toggleSalaryPaid(
+      selectedEmployee.id,
+      selectedMonth || new Date().toISOString().slice(0, 7)
+    )
+  }
+  className={`px-3 py-1 rounded mt-2 ${
+    salaryPaidMap[
+      `${selectedEmployee.id}-${selectedMonth || new Date().toISOString().slice(0, 7)}`
+    ]
+      ? "bg-green-500 text-white"
+      : "bg-red-500 text-white"
+  }`}
+>
+  {salaryPaidMap[
+    `${selectedEmployee.id}-${selectedMonth || new Date().toISOString().slice(0, 7)}`
+  ]
+    ? "تم السداد"
+    : "لم يتم السداد"}
+</button>
 
               <h4 className="mt-3 font-semibold">الحوافز:</h4>
               <ul className="list-disc ms-5">
