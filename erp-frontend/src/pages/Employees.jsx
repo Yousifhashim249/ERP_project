@@ -793,7 +793,7 @@ const toggleSalaryPaid = (employeeId, month) => {
     `${selectedEmployee.id}-${selectedMonth || new Date().toISOString().slice(0, 7)}`
   ]
     ? "تم السداد"
-    : "لم يتم السداد"}
+    : "  اضغط هنا لتسديد المرتب "}
 </button>
 
               <h4 className="mt-3 font-semibold">الحوافز:</h4>
