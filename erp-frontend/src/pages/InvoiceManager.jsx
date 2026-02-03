@@ -333,7 +333,10 @@ export default function ConsumablesInvoiceAutocomplete() {
           </tr>
         </thead>
         <tbody>
-          {vendorInvoices.map((inv) => (
+         {[...vendorInvoices]
+  .sort((a, b) => b.id - a.id)
+  .map((inv) => (
+
             <tr key={inv.id}>
               <td className="border p-2">{inv.id}</td>
               <td className="border p-2">{inv.date}</td>

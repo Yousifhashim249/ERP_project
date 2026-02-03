@@ -34,7 +34,7 @@ class EmployeeSchema(BaseModel):
     job_title: Optional[str]
     salary: float
     payment_method: Optional[str]
-    net_salary: Optional[float] = 0.0 
+   
 class EmployeeResponse(EmployeeSchema):
     id: int
     salary_slips: List["SalarySlipResponse"] = []  # ← أضف هذه السطر

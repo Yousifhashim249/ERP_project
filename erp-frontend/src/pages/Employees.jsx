@@ -355,27 +355,27 @@ const toggleSalaryPaid = (employeeId, month) => {
               }
             />
             <select
-              id="department"
-              value={newEmployee.department_id}
-              onChange={(e) => {
-                const dept = departments.find((d) => d.name === e.target.value);
-                setNewEmployee({
-                  ...newEmployee,
-                  department_id: dept ? dept.id : ""
-                });
-              }}
-              className="border p-1"
-              onKeyDown={(e) =>
-                e.key === "Enter" && document.getElementById("job_title").focus()
-              }
-            >
-              <option value="">اختر القسم</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.name}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+  id="department"
+  value={newEmployee.department_id || ""}
+  onChange={(e) =>
+    setNewEmployee({
+      ...newEmployee,
+      department_id: Number(e.target.value) || null
+    })
+  }
+  className="border p-1"
+  onKeyDown={(e) =>
+    e.key === "Enter" && document.getElementById("job_title").focus()
+  }
+>
+  <option value="">اختر القسم</option>
+  {departments.map((d) => (
+    <option key={d.id} value={d.id}>
+      {d.name}
+    </option>
+  ))}
+</select>
+
             <input
               id="job_title"
               placeholder="الوظيفة"
