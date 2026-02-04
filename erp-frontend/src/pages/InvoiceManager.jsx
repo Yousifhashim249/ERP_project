@@ -327,6 +327,7 @@ export default function ConsumablesInvoiceAutocomplete() {
             <th className="border p-2">#ID</th>
             <th className="border p-2">التاريخ</th>
             <th className="border p-2">القسم</th>
+            <th className="border p-2">المورد</th> 
             <th className="border p-2">الخطوط</th>
             <th className="border p-2">المجموع</th>
             <th className="border p-2">إجراءات</th>
@@ -341,6 +342,7 @@ export default function ConsumablesInvoiceAutocomplete() {
               <td className="border p-2">{inv.id}</td>
               <td className="border p-2">{inv.date}</td>
               <td className="border p-2">{inv.department_name || "غير محدد"}</td>
+              <td className="border p-2 font-semibold text-blue-700">{inv.vendor_name || "غير محدد"}</td>
               <td className="border p-2">
                 <ul>
                   {inv.lines?.map((line, idx) => (
