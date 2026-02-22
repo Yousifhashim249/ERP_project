@@ -52,6 +52,7 @@ const toggleSalaryPaid = (employeeId, month) => {
     salary: 0,
     payment_method: ""
   });
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   const [newDepartment, setNewDepartment] = useState({
     name: "",
@@ -280,17 +281,22 @@ const toggleSalaryPaid = (employeeId, month) => {
               </td>
               <td className="border px-2 py-1 space-x-1">
                 <button
-                  className="bg-yellow-500 text-white px-1 py-0.5 rounded"
-                  onClick={async () => {
-                    const updatedName = prompt("أدخل الاسم الجديد:", emp.name);
-                    if (updatedName) {
-                      await updateEmployee(emp.id, { ...emp, name: updatedName });
-                      fetchEmployees();
-                    }
-                  }}
-                >
-                  تعديل
-                </button>
+  className="bg-yellow-500 text-white px-1 py-0.5 rounded"
+  onClick={() => {
+    setActiveTab("addEmployee");
+    setEditingEmployee(emp.id);
+    setNewEmployee({
+      name: emp.name,
+      phone: emp.phone,
+      department_id: emp.department_id,
+      job_title: emp.job_title,
+      salary: emp.salary,
+      payment_method: emp.payment_method || ""
+    });
+  }}
+>
+  تعديل
+</button>
                 <button
                   className="bg-red-500 text-white px-1 py-0.5 rounded"
                   onClick={async () => {
@@ -417,13 +423,39 @@ const toggleSalaryPaid = (employeeId, month) => {
                 e.key === "Enter" && document.getElementById("add_button").focus()
               }
             />
-            <button
-              id="add_button"
-              onClick={handleCreateEmployee}
-              className="bg-green-500 text-white px-2 py-1 rounded"
-            >
-              إضافة موظف
-            </button>
+           <button
+  id="add_button"
+  onClick={async () => {
+    if (editingEmployee) {
+      await updateEmployee(editingEmployee, {
+        ...newEmployee,
+        salary: parseFloat(newEmployee.salary),
+        department_id: parseInt(newEmployee.department_id)
+      });
+
+      alert("✅ تم تعديل بيانات الموظف بنجاح");
+      setEditingEmployee(null);
+    } else {
+      await handleCreateEmployee();
+    }
+
+    setNewEmployee({
+      name: "",
+      phone: "",
+      department_id: "",
+      job_title: "",
+      salary: 0,
+      payment_method: ""
+    });
+
+    fetchEmployees();
+  }}
+  className={`px-2 py-1 rounded text-white ${
+    editingEmployee ? "bg-yellow-500" : "bg-green-500"
+  }`}
+>
+  {editingEmployee ? "حفظ التعديلات" : "إضافة موظف"}
+</button>
           </div>
         </section>
       )}
