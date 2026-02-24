@@ -26,6 +26,8 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(""); // ✅ الشهر المختار
   const [activeTab, setActiveTab] = useState("employees");
   const [filterDept, setFilterDept] = useState("");
+  const [bonusEmployeeInput, setBonusEmployeeInput] = useState("");
+  const [deductionEmployeeInput, setDeductionEmployeeInput] = useState("");
 // ✅ حالة السداد لكل موظف لكل شهر
   const [salaryPaidMap, setSalaryPaidMap] = useState({});
 
@@ -57,7 +59,17 @@ const toggleSalaryPaid = (employeeId, month) => {
   const [newDepartment, setNewDepartment] = useState({
     name: "",
     description: ""
-  });
+  });// ✅ حساب مجموع الحوافز
+const totalBonuses = bonuses.reduce(
+  (sum, b) => sum + Number(b.amount || 0),
+  0
+);
+
+// ✅ حساب مجموع الخصومات
+const totalDeductions = deductions.reduce(
+  (sum, d) => sum + Number(d.amount || 0),
+  0
+);
 
   // ✅ حالات جديدة للحوافز والخصومات
   const [newBonus, setNewBonus] = useState({});
@@ -532,232 +544,220 @@ const toggleSalaryPaid = (employeeId, month) => {
         </section>
       )}
 
-      {/* --- تبويب الحوافز والخصومات --- */}
-      {activeTab === "bonusesDeductions" && (
-        <section className="p-4 border rounded bg-gray-50 space-y-2">
-          <h2 className="text-xl font-semibold">الحوافز والخصومات</h2>
+      {/* --- تبويب الحوافز والخصومات باستخدام datalist --- */}
+{activeTab === "bonusesDeductions" && (
+  <section className="p-4 border rounded bg-gray-50 space-y-3">
+    <h2 className="text-xl font-semibold">الحوافز والخصومات</h2>
 
-          <h3 className="font-semibold mt-2">الحوافز</h3>
-          <table className="w-full border-collapse border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-2 py-1">ID</th>
-                <th className="border px-2 py-1">اسم الموظف</th>
-                <th className="border px-2 py-1">الشهر</th>
-                <th className="border px-2 py-1">المبلغ</th>
-                <th className="border px-2 py-1">السبب</th>
-                <th className="border px-2 py-1">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bonuses.map((b) => {
-                const emp = employees.find((e) => e.id === b.employee_id);
-                return (
-                  <tr key={b.id}>
-                    <td className="border px-2 py-1">{b.id}</td>
-                    <td className="border px-2 py-1">
-                      {emp ? emp.name : "-"}
-                    </td>
-                    <td className="border px-2 py-1">{b.month}</td>
-                    <td className="border px-2 py-1">{b.amount}</td>
-                    <td className="border px-2 py-1">{b.reason}</td>
-                    <td className="border px-2 py-1">
-                      <button
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                        onClick={async () => {
-                          if (confirm("هل أنت متأكد من حذف هذا الحافز؟")) {
-                            await deleteBonus(b.id);
-                            fetchBonuses();
-                          }
-                        }}
-                      >
-                        حذف
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+    {/* ===== الخصومات أولًا ===== */}
+    <h3 className="font-semibold mt-2">الخصومات</h3>
+    <table className="w-full border-collapse border">
+      <thead>
+        <tr className="bg-gray-200">
+          <th className="border px-2 py-1">ID</th>
+          <th className="border px-2 py-1">اسم الموظف</th>
+          <th className="border px-2 py-1">الشهر</th>
+          <th className="border px-2 py-1">المبلغ</th>
+          <th className="border px-2 py-1">السبب</th>
+          <th className="border px-2 py-1">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {deductions.map((d) => {
+          const emp = employees.find((e) => e.id === d.employee_id);
+          return (
+            <tr key={d.id}>
+              <td className="border px-2 py-1">{d.id}</td>
+              <td className="border px-2 py-1">{emp ? emp.name : "-"}</td>
+              <td className="border px-2 py-1">{d.month}</td>
+              <td className="border px-2 py-1">{d.amount}</td>
+              <td className="border px-2 py-1">{d.reason}</td>
+              <td className="border px-2 py-1">
+                <button
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                  onClick={async () => {
+                    if (confirm("هل أنت متأكد من حذف هذا الخصم؟")) {
+                      await deleteDeduction(d.id);
+                      fetchDeductions();
+                    }
+                  }}
+                >
+                  حذف
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+    <div className="mt-2 text-right font-bold text-red-600">
+      مجموع الخصومات: {totalDeductions.toFixed(2)}
+    </div>
 
-          {/* ✅ فورم إضافة حافز جديد */}
-          <div className="mt-6 border-t pt-4">
-            <h3 className="font-semibold mb-2">إضافة حافز جديد</h3>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={newBonus.employee_id || ""}
-                onChange={(e) =>
-                  setNewBonus({
-                    ...newBonus,
-                    employee_id: parseInt(e.target.value)
-                  })
-                }
-                className="border p-1"
-              >
-                <option value="">اختر الموظف</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="month"
-                value={newBonus.month || ""}
-                onChange={(e) =>
-                  setNewBonus({ ...newBonus, month: e.target.value })
-                }
-                className="border p-1"
-              />
-              <input
-                type="number"
-                placeholder="المبلغ"
-                value={newBonus.amount || ""}
-                onChange={(e) =>
-                  setNewBonus({ ...newBonus, amount: e.target.value })
-                }
-                className="border p-1"
-              />
-              <input
-                placeholder="السبب"
-                value={newBonus.reason || ""}
-                onChange={(e) =>
-                  setNewBonus({ ...newBonus, reason: e.target.value })
-                }
-                className="border p-1"
-              />
-              
-              <button
-                onClick={async () => {
-                  if (!newBonus.employee_id) return alert("اختر الموظف أولاً");
-                  await createBonus({
-                    employee_id: newBonus.employee_id,
-                    month: newBonus.month,
-                    amount: parseFloat(newBonus.amount),
-                    reason: newBonus.reason
-                  });
-                  setNewBonus({});
-                  fetchBonuses();
-                  alert("✅ تم إضافة الحافز بنجاح");
-                }}
-                className="bg-green-500 text-white px-3 py-1 rounded"
-              >
-                إضافة
-              </button>
-            </div>
-          </div>
+    {/* فورم إضافة خصم جديد باستخدام datalist */}
+    <div className="mt-4 border-t pt-4">
+      <h3 className="font-semibold mb-2">إضافة خصم جديد</h3>
+      <div className="flex flex-wrap gap-2 items-center">
+        <input
+          list="deductionEmployeeList"
+          placeholder="اختر أو ابحث عن الموظف"
+          value={deductionEmployeeInput}
+          onChange={(e) => setDeductionEmployeeInput(e.target.value)}
+          className="border p-1 flex-1"
+        />
+        <datalist id="deductionEmployeeList">
+          {employees.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.name}
+            </option>
+          ))}
+        </datalist>
 
-          <h3 className="font-semibold mt-4">الخصومات</h3>
-          <table className="w-full border-collapse border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-2 py-1">ID</th>
-                <th className="border px-2 py-1">اسم الموظف</th>
-                <th className="border px-2 py-1">الشهر</th>
-                <th className="border px-2 py-1">المبلغ</th>
-                <th className="border px-2 py-1">السبب</th>
-                <th className="border px-2 py-1">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deductions.map((d) => {
-                const emp = employees.find((e) => e.id === d.employee_id);
-                return (
-                  <tr key={d.id}>
-                    <td className="border px-2 py-1">{d.id}</td>
-                    <td className="border px-2 py-1">
-                      {emp ? emp.name : "-"}
-                    </td>
-                    <td className="border px-2 py-1">{d.month}</td>
-                    <td className="border px-2 py-1">{d.amount}</td>
-                    <td className="border px-2 py-1">{d.reason}</td>
-                    <td className="border px-2 py-1">
-                      <button
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                        onClick={async () => {
-                          if (confirm("هل أنت متأكد من حذف هذا الخصم؟")) {
-                            await deleteDeduction(d.id);
-                            fetchDeductions();
-                          }
-                        }}
-                      >
-                        حذف
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <input
+          type="month"
+          value={newDeduction.month || ""}
+          onChange={(e) => setNewDeduction({ ...newDeduction, month: e.target.value })}
+          className="border p-1"
+        />
+        <input
+          type="number"
+          placeholder="المبلغ"
+          value={newDeduction.amount || ""}
+          onChange={(e) => setNewDeduction({ ...newDeduction, amount: e.target.value })}
+          className="border p-1"
+        />
+        <input
+          placeholder="السبب"
+          value={newDeduction.reason || ""}
+          onChange={(e) => setNewDeduction({ ...newDeduction, reason: e.target.value })}
+          className="border p-1"
+        />
+        <button
+          onClick={async () => {
+            if (!deductionEmployeeInput) return alert("اختر الموظف أولاً");
+            await createDeduction({
+              employee_id: deductionEmployeeInput,
+              month: newDeduction.month,
+              amount: parseFloat(newDeduction.amount),
+              reason: newDeduction.reason
+            });
+            setNewDeduction({});
+            setDeductionEmployeeInput("");
+            fetchDeductions();
+            alert("✅ تم إضافة الخصم بنجاح");
+          }}
+          className="bg-red-500 text-white px-3 py-1 rounded"
+        >
+          إضافة
+        </button>
+      </div>
+    </div>
 
-          {/* ✅ فورم إضافة خصم جديد */}
-          <div className="mt-6 border-t pt-4">
-            <h3 className="font-semibold mb-2">إضافة خصم جديد</h3>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={newDeduction.employee_id || ""}
-                onChange={(e) =>
-                  setNewDeduction({
-                    ...newDeduction,
-                    employee_id: parseInt(e.target.value)
-                  })
-                }
-                className="border p-1"
-              >
-                <option value="">اختر الموظف</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="month"
-                value={newDeduction.month || ""}
-                onChange={(e) =>
-                  setNewDeduction({ ...newDeduction, month: e.target.value })
-                }
-                className="border p-1"
-              />
-              <input
-                type="number"
-                placeholder="المبلغ"
-                value={newDeduction.amount || ""}
-                onChange={(e) =>
-                  setNewDeduction({ ...newDeduction, amount: e.target.value })
-                }
-                className="border p-1"
-              />
-              <input
-                placeholder="السبب"
-                value={newDeduction.reason || ""}
-                onChange={(e) =>
-                  setNewDeduction({ ...newDeduction, reason: e.target.value })
-                }
-                className="border p-1"
-              />
-              <button
-                onClick={async () => {
-                  if (!newDeduction.employee_id)
-                    return alert("اختر الموظف أولاً");
-                  await createDeduction({
-                    employee_id: newDeduction.employee_id,
-                    month: newDeduction.month,
-                    amount: parseFloat(newDeduction.amount),
-                    reason: newDeduction.reason
-                  });
-                  setNewDeduction({});
-                  fetchDeductions();
-                  alert("✅ تم إضافة الخصم بنجاح");
-                }}
-                className="bg-red-500 text-white px-3 py-1 rounded"
-              >
-                إضافة
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+    {/* ===== الحوافز بعد ذلك ===== */}
+    <h3 className="font-semibold mt-6">الحوافز</h3>
+    <table className="w-full border-collapse border">
+      <thead>
+        <tr className="bg-gray-200">
+          <th className="border px-2 py-1">ID</th>
+          <th className="border px-2 py-1">اسم الموظف</th>
+          <th className="border px-2 py-1">الشهر</th>
+          <th className="border px-2 py-1">المبلغ</th>
+          <th className="border px-2 py-1">السبب</th>
+          <th className="border px-2 py-1">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {bonuses.map((b) => {
+          const emp = employees.find((e) => e.id === b.employee_id);
+          return (
+            <tr key={b.id}>
+              <td className="border px-2 py-1">{b.id}</td>
+              <td className="border px-2 py-1">{emp ? emp.name : "-"}</td>
+              <td className="border px-2 py-1">{b.month}</td>
+              <td className="border px-2 py-1">{b.amount}</td>
+              <td className="border px-2 py-1">{b.reason}</td>
+              <td className="border px-2 py-1">
+                <button
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                  onClick={async () => {
+                    if (confirm("هل أنت متأكد من حذف هذا الحافز؟")) {
+                      await deleteBonus(b.id);
+                      fetchBonuses();
+                    }
+                  }}
+                >
+                  حذف
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+    <div className="mt-2 text-right font-bold text-green-600">
+      مجموع الحوافز: {totalBonuses.toFixed(2)}
+    </div>
+
+    {/* فورم إضافة حافز جديد باستخدام datalist */}
+    <div className="mt-4 border-t pt-4">
+      <h3 className="font-semibold mb-2">إضافة حافز جديد</h3>
+      <div className="flex flex-wrap gap-2 items-center">
+        <input
+          list="bonusEmployeeList"
+          placeholder="اختر أو ابحث عن الموظف"
+          value={bonusEmployeeInput}
+          onChange={(e) => setBonusEmployeeInput(e.target.value)}
+          className="border p-1 flex-1"
+        />
+        <datalist id="bonusEmployeeList">
+          {employees.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.name}
+            </option>
+          ))}
+        </datalist>
+
+        <input
+          type="month"
+          value={newBonus.month || ""}
+          onChange={(e) => setNewBonus({ ...newBonus, month: e.target.value })}
+          className="border p-1"
+        />
+        <input
+          type="number"
+          placeholder="المبلغ"
+          value={newBonus.amount || ""}
+          onChange={(e) => setNewBonus({ ...newBonus, amount: e.target.value })}
+          className="border p-1"
+        />
+        <input
+          placeholder="السبب"
+          value={newBonus.reason || ""}
+          onChange={(e) => setNewBonus({ ...newBonus, reason: e.target.value })}
+          className="border p-1"
+        />
+        <button
+          onClick={async () => {
+            if (!bonusEmployeeInput) return alert("اختر الموظف أولاً");
+            await createBonus({
+              employee_id: bonusEmployeeInput,
+              month: newBonus.month,
+              amount: parseFloat(newBonus.amount),
+              reason: newBonus.reason
+            });
+            setNewBonus({});
+            setBonusEmployeeInput("");
+            fetchBonuses();
+            alert("✅ تم إضافة الحافز بنجاح");
+          }}
+          className="bg-green-500 text-white px-3 py-1 rounded"
+        >
+          إضافة
+        </button>
+      </div>
+    </div>
+  </section>
+)}
 
       {/* --- تبويب جلب موظف --- */}
       {activeTab === "fetchEmployee" && (
