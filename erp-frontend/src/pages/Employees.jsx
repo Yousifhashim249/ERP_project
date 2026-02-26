@@ -28,6 +28,25 @@ function App() {
   const [filterDept, setFilterDept] = useState("");
   const [bonusEmployeeInput, setBonusEmployeeInput] = useState("");
   const [deductionEmployeeInput, setDeductionEmployeeInput] = useState("");
+  // ✅ فلترة الموظفين حسب القسم
+const filteredEmployees = employees.filter(
+  (emp) => !filterDept || emp.department_id === parseInt(filterDept)
+);
+
+// ✅ إجمالي الأجور
+const totalSalaries = filteredEmployees.reduce(
+  (sum, emp) => sum + Number(emp.salary || 0),
+  0
+);
+
+// ✅ إجمالي صافي الرواتب
+const totalNetSalaries = filteredEmployees.reduce(
+  (sum, emp) => sum + Number(emp.net_salary || 0),
+  0
+);
+
+// ✅ الفرق (حوافز - خصومات)
+const totalDifference = totalNetSalaries - totalSalaries;
 // ✅ حالة السداد لكل موظف لكل شهر
   const [salaryPaidMap, setSalaryPaidMap] = useState({});
 
@@ -269,17 +288,18 @@ const totalDeductions = deductions.reduce(
           <th className="border px-2 py-1">الاسم</th>
           <th className="border px-2 py-1">الهاتف</th>
           <th className="border px-2 py-1">الوظيفة</th>
-          <th className="border px-2 py-1">الراتب</th>
-          <th className="border px-2 py-1">طريقة الدفع</th> {/* ✅ جديد */}
+          <th className="border px-2 py-1">الأجر</th>
+          <th className="border px-2 py-1"> ملاحظات</th> {/* ✅ جديد */}
           <th className="border px-2 py-1">صافي الراتب</th> {/* ✅ جديد */}
           <th className="border px-2 py-1">القسم</th>
           <th className="border px-2 py-1">إجراءات</th>
         </tr>
       </thead>
       <tbody>
-        {employees
-          .filter((emp) => !filterDept || emp.department_id === parseInt(filterDept))
-          .map((emp) => (
+       {employees
+  .filter((emp) => !filterDept || emp.department_id === parseInt(filterDept))
+  .sort((a, b) => a.name.localeCompare(b.name, "ar"))
+  .map((emp) => (
             <tr key={emp.id}>
               <td className="border px-2 py-1">{emp.id}</td>
               <td className="border px-2 py-1">{emp.name}</td>
@@ -327,19 +347,36 @@ const totalDeductions = deductions.reduce(
 
       {/* ✅ إجمالي صافي الرواتب */}
       <tfoot>
-        <tr className="bg-gray-100 font-semibold">
-          <td colSpan="7" className="text-right border px-2 py-1">
-            إجمالي صافي الرواتب:
-          </td>
-          <td className="border px-2 py-1">
-            {employees
-              .filter((emp) => !filterDept || emp.department_id === parseInt(filterDept))
-              .reduce((sum, emp) => sum + (emp.net_salary || 0), 0)
-              .toLocaleString()}
-          </td>
-          <td className="border px-2 py-1">—</td>
-        </tr>
-      </tfoot>
+  <tr className="bg-gray-100 font-semibold">
+    <td colSpan="7" className="text-right border px-2 py-1">
+      إجمالي الأجور:
+    </td>
+    <td className="border px-2 py-1">
+      {totalSalaries.toLocaleString()}
+    </td>
+    <td className="border px-2 py-1">—</td>
+  </tr>
+
+  <tr className="bg-green-100 font-semibold">
+    <td colSpan="7" className="text-right border px-2 py-1">
+      إجمالي صافي الرواتب:
+    </td>
+    <td className="border px-2 py-1">
+      {totalNetSalaries.toLocaleString()}
+    </td>
+    <td className="border px-2 py-1">—</td>
+  </tr>
+
+  <tr className="bg-blue-100 font-semibold">
+    <td colSpan="7" className="text-right border px-2 py-1">
+      الفرق بين الإجمالي والصافي:
+    </td>
+    <td className="border px-2 py-1">
+      {totalDifference.toLocaleString()}
+    </td>
+    <td className="border px-2 py-1">—</td>
+  </tr>
+</tfoot>
     </table>
   </section>
 )}
@@ -548,52 +585,7 @@ const totalDeductions = deductions.reduce(
 {activeTab === "bonusesDeductions" && (
   <section className="p-4 border rounded bg-gray-50 space-y-3">
     <h2 className="text-xl font-semibold">الحوافز والخصومات</h2>
-
-    {/* ===== الخصومات أولًا ===== */}
-    <h3 className="font-semibold mt-2">الخصومات</h3>
-    <table className="w-full border-collapse border">
-      <thead>
-        <tr className="bg-gray-200">
-          <th className="border px-2 py-1">ID</th>
-          <th className="border px-2 py-1">اسم الموظف</th>
-          <th className="border px-2 py-1">الشهر</th>
-          <th className="border px-2 py-1">المبلغ</th>
-          <th className="border px-2 py-1">السبب</th>
-          <th className="border px-2 py-1">إجراءات</th>
-        </tr>
-      </thead>
-      <tbody>
-        {deductions.map((d) => {
-          const emp = employees.find((e) => e.id === d.employee_id);
-          return (
-            <tr key={d.id}>
-              <td className="border px-2 py-1">{d.id}</td>
-              <td className="border px-2 py-1">{emp ? emp.name : "-"}</td>
-              <td className="border px-2 py-1">{d.month}</td>
-              <td className="border px-2 py-1">{d.amount}</td>
-              <td className="border px-2 py-1">{d.reason}</td>
-              <td className="border px-2 py-1">
-                <button
-                  className="bg-red-500 text-white px-2 py-1 rounded"
-                  onClick={async () => {
-                    if (confirm("هل أنت متأكد من حذف هذا الخصم؟")) {
-                      await deleteDeduction(d.id);
-                      fetchDeductions();
-                    }
-                  }}
-                >
-                  حذف
-                </button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-    <div className="mt-2 text-right font-bold text-red-600">
-      مجموع الخصومات: {totalDeductions.toFixed(2)}
-    </div>
-
+    
     {/* فورم إضافة خصم جديد باستخدام datalist */}
     <div className="mt-4 border-t pt-4">
       <h3 className="font-semibold mb-2">إضافة خصم جديد</h3>
@@ -652,6 +644,52 @@ const totalDeductions = deductions.reduce(
         </button>
       </div>
     </div>
+
+    {/* ===== الخصومات أولًا ===== */}
+    <h3 className="font-semibold mt-2">الخصومات</h3>
+    <table className="w-full border-collapse border">
+      <thead>
+        <tr className="bg-gray-200">
+          <th className="border px-2 py-1">ID</th>
+          <th className="border px-2 py-1">اسم الموظف</th>
+          <th className="border px-2 py-1">الشهر</th>
+          <th className="border px-2 py-1">المبلغ</th>
+          <th className="border px-2 py-1">السبب</th>
+          <th className="border px-2 py-1">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {deductions.map((d) => {
+          const emp = employees.find((e) => e.id === d.employee_id);
+          return (
+            <tr key={d.id}>
+              <td className="border px-2 py-1">{d.id}</td>
+              <td className="border px-2 py-1">{emp ? emp.name : "-"}</td>
+              <td className="border px-2 py-1">{d.month}</td>
+              <td className="border px-2 py-1">{d.amount}</td>
+              <td className="border px-2 py-1">{d.reason}</td>
+              <td className="border px-2 py-1">
+                <button
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                  onClick={async () => {
+                    if (confirm("هل أنت متأكد من حذف هذا الخصم؟")) {
+                      await deleteDeduction(d.id);
+                      fetchDeductions();
+                    }
+                  }}
+                >
+                  حذف
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+    <div className="mt-2 text-right font-bold text-red-600">
+      مجموع الخصومات: {totalDeductions.toFixed(2)}
+    </div>
+
 
     {/* ===== الحوافز بعد ذلك ===== */}
     <h3 className="font-semibold mt-6">الحوافز</h3>

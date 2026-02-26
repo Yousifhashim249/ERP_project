@@ -199,9 +199,9 @@ class  Employee(Base):
   # cash / bank_transfer / cheque
 
     department = relationship("Department", back_populates="employees")
-    attendances = relationship("Attendance", back_populates="employee")
+    attendances = relationship("Attendance", back_populates="employee", cascade="all, delete")
     salary_slips = relationship("SalarySlip", back_populates="employee")
-    deductions = relationship("Deduction", back_populates="employee")  
+    deductions = relationship("Deduction", back_populates="employee",cascade="all, delete")  
     bonuses = relationship("Bonus", back_populates="employee")        
 
 
@@ -235,7 +235,7 @@ class Deduction(Base):
     __tablename__ = "deductions"
 
     id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id",ondelete="CASCADE"), nullable=False)
     month = Column(String, nullable=False)  # مثل "2025-10"
     amount = Column(Float, default=0.0)
     reason = Column(String, nullable=True)
@@ -249,7 +249,7 @@ class Bonus(Base):
     __tablename__ = "bonuses"
 
     id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id",ondelete="CASCADE"), nullable=False)
     month = Column(String, nullable=False)
     amount = Column(Float, default=0.0)
     reason = Column(String, nullable=True)
